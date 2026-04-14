@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spilt Easy — 旅行分帳</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #F7F4EF;
+  --card: #FFFFFF;
+  --text: #1A1714;
+  --muted: #7A7470;
+  --border: #E5E0D8;
+  --accent: #C84B2F;
+  --accent-light: #FAF0ED;
+  --green: #2E7D5E;
+  --green-light: #EBF5F0;
+  --red: #C84B2F;
+  --red-light: #FAF0ED;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); min-height: 100vh; }
+.app { max-width: 440px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+
+/* SCREENS */
+.screen { display: none; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* HOME */
+.hero { padding: 3rem 0 2rem; text-align: center; }
+.hero h1 { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; color: var(--text); }
+.hero h1 em { font-style: italic; color: var(--accent); }
+.hero p { font-size: 15px; color: var(--muted); margin-top: 10px; font-weight: 300; }
+
+/* CARDS */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.card-label { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
+/* FORM ELEMENTS */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 10px 14px; font-size: 14px; font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field-row { display: flex; gap: 8px; }
+.field-row .field { flex: 1; margin-bottom: 0; }
+
+/* BUTTONS */
+.btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s; }
+.btn:hover { background: var(--border); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: transparent; }
+.btn.primary:hover { opacity: 0.85; }
+.btn.accent { background: var(--accent); color: white; border-color: transparent; }
+.btn.accent:hover { opacity: 0.9; }
+.btn.sm { width: auto; padding: 7px 14px; font-size: 13px; }
+.btn.danger { color: var(--red); border-color: #F0B0A0; }
+.btn.danger:hover { background: var(--red-light); }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* NAV */
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 1.25rem; }
+.nav-title { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.nav-back { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; padding: 0; }
+.nav-back:hover { color: var(--text); }
+
+/* CODE BOX */
+.code-box { background: var(--accent-light); border: 1px solid #F0C0B0; border-radius: var(--radius); padding: 1.25rem; text-align: center; margin: 1rem 0; }
+.code-str { font-family: 'DM Serif Display', serif; font-size: 34px; letter-spacing: 4px; color: var(--accent); }
+.code-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* MEMBER CHIPS */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px 5px 7px; font-size: 13px; }
+.chip .av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; flex-shrink: 0; }
+.chip button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; }
+
+/* AVATAR */
+.av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+.av.lg { width: 44px; height: 44px; font-size: 15px; }
+
+/* TABS */
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; gap: 0; }
+.tab { flex: 1; padding: 10px 6px; font-size: 13px; text-align: center; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; font-weight: 400; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* TRIP HEADER */
+.trip-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+.trip-name { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+.code-pill { background: var(--accent-light); border: 1px solid #F0C0B0; border-radius: 999px; padding: 4px 12px; font-size: 12px; color: var(--accent); font-weight: 500; letter-spacing: 1px; }
+.sync-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 4px; }
+
+/* EXPENSE LIST */
+.exp-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.exp-item:last-child { border-bottom: none; }
+.exp-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.exp-right { text-align: right; flex-shrink: 0; }
+.exp-amt { font-size: 15px; font-weight: 500; }
+
+/* BALANCE */
+.bal-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.bal-row:last-child { border-bottom: none; }
+.bal-info { flex: 1; }
+.bal-name { font-size: 14px; font-weight: 500; }
+.bal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.bal-amt { font-size: 16px; font-weight: 500; }
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+
+.settle-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.settle-row:last-child { border-bottom: none; }
+.arrow { color: var(--muted); }
+
+/* STATS */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+.stat-lbl { font-size: 12px; color: var(--muted); }
+.stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--text); margin-top: 2px; }
+.cat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.cat-row:last-child { border-bottom: none; }
+.cat-bar-bg { flex: 1; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.cat-bar { height: 100%; background: var(--accent); border-radius: 3px; }
+
+/* UPLOAD */
+.upload-zone { border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; }
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-light); }
+.upload-zone p { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.ai-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--green-light); color: var(--green); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; margin-bottom: 10px; }
+.progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+
+/* SPLIT */
+.split-toggle { display: flex; gap: 6px; margin-bottom: 10px; }
+.split-btn { flex: 1; padding: 7px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; cursor: pointer; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.split-btn.active { background: var(--text); color: var(--bg); border-color: transparent; }
+.chk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.chk-item { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.chk-item.sel { border-color: var(--accent); background: var(--accent-light); }
+
+/* EXPORT */
+.export-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; font-size: 13px; line-height: 1.9; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; margin-bottom: 12px; color: var(--text); }
+
+/* EMPTY */
+.empty { text-align: center; padding: 2.5rem 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.3s; z-index: 999; pointer-events: none; white-space: nowrap; }
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* LOADING */
+#global-loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; flex-direction: column; gap: 12px; }
+#global-loading p { font-size: 14px; color: var(--muted); }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="global-loading">
+  <div class="spinner"></div>
+  <p>載入中...</p>
+</div>
+
+<div id="toast"></div>
+
+<div class="app">
+
+<!-- ── HOME ── -->
+<div class="screen" id="s-home">
+  <div class="hero">
+    <h1>Spilt<br/><em>Easy</em></h1>
+    <p>旅行分帳，輕鬆搞定</p>
+  </div>
+  <div class="card">
+    <div class="card-label">建立新旅行</div>
+    <div class="field"><label>旅行名稱</label><input type="text" id="hn-name" placeholder="例如：南法普羅旺斯"/></div>
+    <div class="field"><label>幣別</label>
+      <select id="hn-currency">
+        <option value="TWD">TWD 新台幣</option>
+        <option value="EUR">EUR 歐元</option>
+        <option value="JPY">JPY 日圓</option>
+        <option value="USD">USD 美元</option>
+        <option value="HKD">HKD 港幣</option>
+      </select>
+    </div>
+    <button class="btn accent" onclick="createTrip()">建立旅行 →</button>
+  </div>
+  <div class="card">
+    <div class="card-label">加入已有旅行</div>
+    <div class="field"><label>旅行代碼</label><input type="text" id="hn-code" placeholder="TRIP-XXXX" style="text-transform:uppercase;letter-spacing:2px;"/></div>
+    <button class="btn" onclick="joinTrip()">加入旅行 →</button>
+  </div>
+</div>
+
+<!-- ── SETUP ── -->
+<div class="screen" id="s-setup">
+  <div class="nav">
+    <button class="nav-back" onclick="goHome()">← 返回</button>
+    <div class="nav-title" id="su-title">設定成員</div>
+    <div></div>
+  </div>
+  <div class="code-box">
+    <div class="code-str" id="su-code"></div>
+    <div class="code-hint">將此代碼分享給旅伴，即可加入同一旅行</div>
+  </div>
+  <div class="card">
+    <div class="card-label">新增成員（最多20人）</div>
+    <div class="field-row">
+      <div class="field"><input type="text" id="su-member" placeholder="輸入名字" onkeydown="if(event.key==='Enter')addMember()"/></div>
+      <button class="btn sm" style="margin-top:0;height:42px;" onclick="addMember()">新增</button>
+    </div>
+    <div class="chips" id="su-chips"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px;" id="su-count">尚未新增成員</div>
+  </div>
+  <button class="btn accent" onclick="goToTrip()">開始記帳 →</button>
+</div>
+
+<!-- ── TRIP MAIN ── -->
+<div class="screen" id="s-trip">
+  <div class="trip-header">
+    <div>
+      <button class="nav-back" onclick="goHome()" style="margin-bottom:4px;">← 所有旅行</button>
+      <div class="trip-name" id="tr-name"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;"><span class="sync-dot" id="sync-dot"></span><span id="sync-txt">已同步</span></div>
+    </div>
+    <div class="code-pill" id="tr-code"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('expenses')">花費</div>
+    <div class="tab" onclick="switchTab('balances')">結算</div>
+    <div class="tab" onclick="switchTab('stats')">統計</div>
+    <div class="tab" onclick="switchTab('export')">匯出</div>
+  </div>
+  <div id="tab-expenses">
+    <button class="btn accent" onclick="goAdd()" style="margin-bottom:1rem;">+ 新增花費</button>
+    <div id="tr-exp-list"></div>
+  </div>
+  <div id="tab-balances" style="display:none;">
+    <div class="card"><div class="card-label">每人淨收支</div><div id="bal-list"></div></div>
+    <div class="card"><div class="card-label">建議轉帳清單</div><div id="settle-list"></div></div>
+  </div>
+  <div id="tab-stats" style="display:none;"><div id="stats-content"></div></div>
+  <div id="tab-export" style="display:none;">
+    <div class="card">
+      <div class="card-label">匯出結帳摘要</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">可直接複製貼到 LINE 群組</p>
+      <div class="export-box" id="export-txt"></div>
+      <button class="btn accent" onclick="copyExport()">複製摘要</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD EXPENSE ── -->
+<div class="screen" id="s-add">
+  <div class="nav">
+    <button class="nav-back" onclick="goToTrip()">← 返回</button>
+    <div class="nav-title">新增花費</div>
+    <div></div>
+  </div>
+  <div class="card">
+    <div class="ai-tag">✦ AI 收據辨識</div>
+    <div class="upload-zone" onclick="document.getElementById('receipt-input').click()">
+      <div style="font-size:28px;">📷</div>
+      <p>點擊上傳收據圖片<br/>AI 自動填入金額與名稱</p>
+      <input type="file" id="receipt-input" accept="image/*" style="display:none;" onchange="handleReceipt(event)"/>
+    </div>
+    <div id="ai-loading" style="display:none;margin-top:10px;">
+      <div style="font-size:13px;color:var(--muted);" id="ai-status">辨識中...</div>
+      <div class="progress-bar"><div class="progress-fill" id="ai-prog" style="width:0%"></div></div>
+    </div>
+    <div id="receipt-preview" style="display:none;margin-top:10px;text-align:center;">
+      <img id="receipt-img" style="max-width:100%;max-height:150px;border-radius:var(--radius-sm);object-fit:contain;"/>
+    </div>
+  </div>
+  <div class="card">
+    <div class="field"><label>項目名稱</label><input type="text" id="add-name" placeholder="例如：晚餐、住宿、門票"/></div>
+    <div class="field"><label>金額</label><input type="number" id="add-amount" placeholder="0" min="0" step="any"/></div>
+    <div class="field"><label>付款人</label><select id="add-payer"></select></div>
+    <div class="field">
+      <label>分帳方式</label>
+      <div class="split-toggle">
+        <button class="split-btn active" id="sp-all" onclick="setSplit('all')">平均分給全部人</button>
+        <button class="split-btn" id="sp-sel" onclick="setSplit('select')">指定分帳對象</button>
+      </div>
+      <div id="sp-area" style="display:none;"><div class="chk-grid" id="sp-checks"></div></div>
+    </div>
+    <div class="field">
+      <label>類別</label>
+      <select id="add-cat">
+        <option value="🍽">🍽 餐飲</option>
+        <option value="🏨">🏨 住宿</option>
+        <option value="🚗">🚗 交通</option>
+        <option value="🎡">🎡 娛樂</option>
+        <option value="🛍">🛍 購物</option>
+        <option value="💊">💊 醫療</option>
+        <option value="📦">📦 其他</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn accent" onclick="saveExpense()">儲存花費</button>
+</div>
+
+</div><!-- .app -->
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBf62ZiumOpE4At9JtFb4-XUD5G9W6frxA",
+  authDomain: "spilt-easy.firebaseapp.com",
+  projectId: "spilt-easy",
+  storageBucket: "spilt-easy.firebasestorage.app",
+  messagingSenderId: "779199113188",
+  appId: "1:779199113188:web:d272f8034c26a8514789f1"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// ── STATE ──
+let state = { tripCode: null, tripName: '', currency: 'TWD', members: [], expenses: [] };
+let splitMode = 'all';
+let unsubscribe = null;
+let catChartCtx = null;
+
+// ── HELPERS ──
+const AV_PALETTES = [
+  ['#FAF0ED','#C84B2F'],['#EBF5F0','#2E7D5E'],['#FFF8E6','#A06800'],
+  ['#EEF2FF','#4338CA'],['#FFF0F5','#9D174D'],['#F0F9FF','#075985']
+];
+function avPalette(name) {
+  let h = 0; for (let c of name) h += c.charCodeAt(0);
+  return AV_PALETTES[h % AV_PALETTES.length];
+}
+function ini(n) { return n.slice(0,2).toUpperCase(); }
+function avEl(name, cls='') {
+  const [bg,fg] = avPalette(name);
+  return `<div class="av ${cls}" style="background:${bg};color:${fg};">${ini(name)}</div>`;
+}
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = 'TRIP-'; for (let i=0;i<4;i++) s += c[Math.floor(Math.random()*c.length)];
+  return s;
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+function setSyncUI(ok) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-txt');
+  if (!dot) return;
+  dot.style.background = ok ? 'var(--green)' : 'var(--red)';
+  txt.textContent = ok ? '已同步' : '同步失敗';
+}
+
+// ── CLOUD ──
+async function cloudSave() {
+  try {
+    await setDoc(doc(db, 'trips', state.tripCode), state);
+    setSyncUI(true);
+  } catch(e) { setSyncUI(false); console.error(e); }
+}
+async function cloudLoad(code) {
+  const snap = await getDoc(doc(db, 'trips', code));
+  return snap.exists() ? snap.data() : null;
+}
+function subscribeTrip(code) {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  unsubscribe = onSnapshot(doc(db, 'trips', code), (snap) => {
+    if (snap.exists()) {
+      state = snap.data();
+      renderTripUI();
+    }
+  });
+}
+
+// ── HOME ──
+function goHome() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  show('s-home');
+}
+window.goHome = goHome;
+
+window.createTrip = async function() {
+  const name = document.getElementById('hn-name').value.trim();
+  if (!name) { toast('請輸入旅行名稱'); return; }
+  const currency = document.getElementById('hn-currency').value;
+  const code = genCode();
+  state = { tripCode: code, tripName: name, currency, members: [], expenses: [] };
+  await cloudSave();
+  document.getElementById('su-code').textContent = code;
+  document.getElementById('su-title').textContent = name;
+  document.getElementById('su-chips').innerHTML = '';
+  document.getElementById('su-count').textContent = '尚未新增成員';
+  document.getElementById('su-member').value = '';
+  show('s-setup');
+};
+
+window.joinTrip = async function() {
+  const code = document.getElementById('hn-code').value.trim().toUpperCase();
+  if (!code.startsWith('TRIP-') || code.length < 9) { toast('代碼格式不正確'); return; }
+  const data = await cloudLoad(code);
+  if (data) {
+    state = data;
+    document.getElementById('su-code').textContent = state.tripCode;
+    document.getElementById('su-title').textContent = state.tripName;
+    renderChips();
+    show('s-setup');
+  } else { toast('找不到此旅行代碼'); }
+};
+
+// ── SETUP ──
+window.addMember = function() {
+  const inp = document.getElementById('su-member');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (state.members.includes(name)) { toast('名稱重複'); return; }
+  if (state.members.length >= 20) { toast('最多20人'); return; }
+  state.members.push(name);
+  cloudSave();
+  inp.value = '';
+  renderChips();
+};
+window.removeMember = function(name) {
+  state.members = state.members.filter(m => m !== name);
+  cloudSave(); renderChips();
+};
+function renderChips() {
+  const c = document.getElementById('su-chips');
+  c.innerHTML = state.members.map(m =>
+    `<span class="chip">${avEl(m,'av-sm')}${m}<button onclick="removeMember('${m}')">×</button></span>`
+  ).join('');
+  document.getElementById('su-count').textContent =
+    state.members.length ? `已新增 ${state.members.length} 位成員` : '尚未新增成員';
+}
+window.goToTrip = function() {
+  if (state.members.length < 2) { toast('請至少新增2位成員'); return; }
+  subscribeTrip(state.tripCode);
+  renderTripUI();
+  show('s-trip');
+};
+
+// ── TRIP ──
+function renderTripUI() {
+  document.getElementById('tr-name').textContent = state.tripName;
+  document.getElementById('tr-code').textContent = state.tripCode;
+  renderExpenses();
+}
+window.switchTab = function(tab) {
+  ['expenses','balances','stats','export'].forEach(t =>
+    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none'
+  );
+  document.querySelectorAll('.tab').forEach((el,i) =>
+    el.classList.toggle('active', ['expenses','balances','stats','export'][i]===tab)
+  );
+  if (tab==='balances') renderBalances();
+  if (tab==='stats') renderStats();
+  if (tab==='export') renderExport();
+};
+function renderExpenses() {
+  const list = document.getElementById('tr-exp-list');
+  if (!state.expenses || state.expenses.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="icon">🧾</div>還沒有任何花費記錄<br>點擊上方按鈕新增第一筆</div>';
+    return;
+  }
+  list.innerHTML = state.expenses.map((e,i) => `
+    <div class="card" style="padding:10px 1.25rem;margin-bottom:8px;">
+      <div class="exp-item" style="padding:0;border:none;">
+        <div class="exp-icon">${e.category}</div>
+        <div class="exp-info">
+          <div class="exp-name">${e.name}</div>
+          <div class="exp-meta">${e.payer} 付款・分給 ${e.splitWith.length} 人</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-amt">${state.currency} ${Number(e.amount).toLocaleString()}</div>
+          <button class="btn sm danger" onclick="deleteExpense(${i})" style="margin-top:5px;padding:3px 10px;font-size:11px;">刪除</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+window.deleteExpense = async function(i) {
+  if (!confirm('確定要刪除這筆花費嗎？')) return;
+  state.expenses.splice(i,1);
+  await cloudSave();
+  renderExpenses();
+};
+
+// ── ADD ──
+window.goAdd = function() {
+  document.getElementById('add-payer').innerHTML = state.members.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('sp-checks').innerHTML = state.members.map(m=>`
+    <label class="chk-item sel" id="ck-${CSS.escape(m)}">
+      <input type="checkbox" value="${m}" checked onchange="toggleChk(this,'${m}')"> ${m}
+    </label>`).join('');
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-amount').value = '';
+  document.getElementById('ai-loading').style.display = 'none';
+  document.getElementById('receipt-preview').style.display = 'none';
+  setSplit('all');
+  show('s-add');
+};
+window.toggleChk = function(el, name) {
+  document.getElementById('ck-'+CSS.escape(name)).classList.toggle('sel', el.checked);
+};
+window.setSplit = function(mode) {
+  splitMode = mode;
+  document.getElementById('sp-all').classList.toggle('active', mode==='all');
+  document.getElementById('sp-sel').classList.toggle('active', mode==='select');
+  document.getElementById('sp-area').style.display = mode==='select' ? 'block' : 'none';
+};
+
+// ── AI RECEIPT ──
+window.handleReceipt = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const b64 = e.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    document.getElementById('receipt-preview').style.display = 'block';
+    document.getElementById('receipt-img').src = e.target.result;
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('ai-status').textContent = 'AI 辨識中...';
+    let prog = 0;
+    const timer = setInterval(() => {
+      prog = Math.min(prog+7, 85);
+      document.getElementById('ai-prog').style.width = prog+'%';
+    }, 200);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 300,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+            { type: 'text', text: '請分析這張收據圖片，回傳JSON（不要加markdown）：{"name":"店名或項目","amount":數字,"category":"🍽或🏨或🚗或🎡或🛍或💊或📦"}。amount只要數字。' }
+          ]}]
+        })
+      });
+      const data = await res.json();
+      clearInterval(timer);
+      document.getElementById('ai-prog').style.width = '100%';
+      const txt = data.content?.find(b=>b.type==='text')?.text || '';
+      const parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
+      if (parsed.name) document.getElementById('add-name').value = parsed.name;
+      if (parsed.amount) document.getElementById('add-amount').value = parsed.amount;
+      if (parsed.category) {
+        const sel = document.getElementById('add-cat');
+        for (let opt of sel.options) { if (opt.value===parsed.category) { sel.value=parsed.category; break; } }
+      }
+      document.getElementById('ai-status').textContent = '✓ 辨識完成，請確認資料';
+      toast('AI 辨識完成！');
+    } catch(err) {
+      clearInterval(timer);
+      document.getElementById('ai-status').textContent = '辨識失敗，請手動填寫';
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveExpense = async function() {
+  const name = document.getElementById('add-name').value.trim();
+  const amount = parseFloat(document.getElementById('add-amount').value);
+  const payer = document.getElementById('add-payer').value;
+  const category = document.getElementById('add-cat').value;
+  if (!name) { toast('請輸入項目名稱'); return; }
+  if (!amount || amount <= 0) { toast('請輸入有效金額'); return; }
+  let splitWith = state.members;
+  if (splitMode === 'select') {
+    splitWith = [...document.querySelectorAll('#sp-checks input:checked')].map(c=>c.value);
+    if (!splitWith.length) { toast('請至少選擇一位分帳對象'); return; }
+  }
+  if (!state.expenses) state.expenses = [];
+  state.expenses.push({ name, amount, payer, category, splitWith, ts: Date.now() });
+  await cloudSave();
+  renderTripUI();
+  show('s-trip');
+  toast('已儲存！');
+};
+
+// ── BALANCES ──
+function calcBal() {
+  const bal = {};
+  state.members.forEach(m => bal[m] = 0);
+  (state.expenses||[]).forEach(e => {
+    const share = e.amount / e.splitWith.length;
+    bal[e.payer] = (bal[e.payer]||0) + e.amount;
+    e.splitWith.forEach(m => bal[m] = (bal[m]||0) - share);
+  });
+  return bal;
+}
+function calcSettlements(bal) {
+  const cred=[], debt=[];
+  Object.entries(bal).forEach(([m,b]) => {
+    if (b>0.5) cred.push({name:m,amount:b});
+    else if (b<-0.5) debt.push({name:m,amount:-b});
+  });
+  cred.sort((a,b)=>b.amount-a.amount); debt.sort((a,b)=>b.amount-a.amount);
+  const txns=[], c=cred.map(x=>({...x})), d=debt.map(x=>({...x}));
+  let ci=0, di=0;
+  while (ci<c.length && di<d.length) {
+    const amt = Math.min(c[ci].amount, d[di].amount);
+    if (amt>0.5) txns.push({from:d[di].name,to:c[ci].name,amount:amt});
+    c[ci].amount -= amt; d[di].amount -= amt;
+    if (c[ci].amount<0.5) ci++;
+    if (d[di].amount<0.5) di++;
+  }
+  return txns;
+}
+function renderBalances() {
+  const bal = calcBal();
+  document.getElementById('bal-list').innerHTML = Object.entries(bal).map(([m,b]) => {
+    const [bg,fg] = avPalette(m);
+    const isPos=b>0.5, isNeg=b<-0.5;
+    return `<div class="bal-row">
+      <div class="av" style="background:${bg};color:${fg};">${ini(m)}</div>
+      <div class="bal-info"><div class="bal-name">${m}</div><div class="bal-sub">${isPos?'應收回':isNeg?'應付出':'已結清'}</div></div>
+      <div class="bal-amt ${isPos?'pos':isNeg?'neg':''}">${isPos?'+':''}${state.currency} ${Math.abs(b).toFixed(0)}</div>
+    </div>`;
+  }).join('');
+  const txns = calcSettlements(bal);
+  document.getElementById('settle-list').innerHTML = txns.length === 0
+    ? '<div class="empty">🎉 大家都結清了！</div>'
+    : txns.map(t=>`<div class="settle-row">${avEl(t.from,'')}<span style="font-weight:500;">${t.from}</span><span class="arrow">→</span>${avEl(t.to,'')}<span style="font-weight:500;">${t.to}</span><span style="margin-left:auto;font-weight:500;">${state.currency} ${Math.round(t.amount).toLocaleString()}</span></div>`).join('');
+}
+
+// ── STATS ──
+function renderStats() {
+  const exps = state.expenses || [];
+  const total = exps.reduce((s,e)=>s+e.amount,0);
+  const perPerson = state.members.length ? total/state.members.length : 0;
+  const catMap = {};
+  const catNames = {'🍽':'餐飲','🏨':'住宿','🚗':'交通','🎡':'娛樂','🛍':'購物','💊':'醫療','📦':'其他'};
+  exps.forEach(e => catMap[e.category] = (catMap[e.category]||0)+e.amount);
+  const sorted = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const colors = ['#C84B2F','#2E7D5E','#A06800','#4338CA','#9D174D','#075985','#374151'];
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-lbl">總花費</div><div class="stat-val">${state.currency} ${Math.round(total).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-lbl">每人均攤</div><div class="stat-val">${state.currency} ${Math.round(perPerson).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-lbl">花費筆數</div><div class="stat-val">${exps.length} 筆</div></div>
+    <div class="stat-card"><div class="stat-lbl">旅行人數</div><div class="stat-val">${state.members.length} 人</div></div>
+  </div>`;
+
+  if (sorted.length > 0) {
+    html += `<div class="card"><div class="card-label">花費類別</div>
+      ${sorted.map(([cat,amt],i)=>`
+        <div class="cat-row">
+          <span style="font-size:18px;width:26px;">${cat}</span>
+          <span style="font-size:13px;flex:1;">${catNames[cat]||cat}</span>
+          <div class="cat-bar-bg"><div class="cat-bar" style="width:${total?Math.round(amt/total*100):0}%;background:${colors[i%colors.length]};"></div></div>
+          <span style="font-size:13px;font-weight:500;min-width:80px;text-align:right;">${state.currency} ${Math.round(amt).toLocaleString()}</span>
+        </div>`).join('')}
+    </div>`;
+  } else { html += '<div class="empty">尚無花費資料</div>'; }
+  document.getElementById('stats-content').innerHTML = html;
+}
+
+// ── EXPORT ──
+function renderExport() {
+  const bal = calcBal();
+  const txns = calcSettlements(bal);
+  const total = (state.expenses||[]).reduce((s,e)=>s+e.amount,0);
+  const now = new Date().toLocaleDateString('zh-TW');
+  let txt = `🧳 ${state.tripName} — 分帳結算\n`;
+  txt += `📅 ${now}　👥 ${state.members.length}人　代碼：${state.tripCode}\n`;
+  txt += `${'─'.repeat(26)}\n`;
+  txt += `💰 總花費：${state.currency} ${Math.round(total).toLocaleString()}\n`;
+  txt += `👤 每人均攤：${state.currency} ${state.members.length?Math.round(total/state.members.length).toLocaleString():0}\n`;
+  txt += `${'─'.repeat(26)}\n📊 每人淨收支：\n`;
+  Object.entries(bal).forEach(([m,b]) => {
+    const sign = b>0.5?'＋':b<-0.5?'－':'＝';
+    txt += `  ${sign} ${m}：${state.currency} ${Math.abs(b).toFixed(0)}\n`;
+  });
+  txt += `${'─'.repeat(26)}\n`;
+  txt += txns.length===0 ? '✅ 大家都結清了！\n' : `💸 轉帳清單：\n${txns.map(t=>`  ${t.from} → ${t.to}：${state.currency} ${Math.round(t.amount).toLocaleString()}`).join('\n')}\n`;
+  txt += `${'─'.repeat(26)}\nby Spilt Easy`;
+  document.getElementById('export-txt').textContent = txt;
+}
+window.copyExport = function() {
+  navigator.clipboard.writeText(document.getElementById('export-txt').textContent)
+    .then(() => toast('已複製！貼到 LINE 群組吧 🎉'));
+};
+
+// ── INIT ──
+document.getElementById('global-loading').style.display = 'none';
+show('s-home');
+
+</script>
+</body>
+</html>
