@@ -100,6 +100,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .bar-fill { height: 100%; border-radius: 3px; }
 .person-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .person-row:last-child { border-bottom: none; }
+.amt-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
+.amt-row:last-child { border-bottom:none; }
+.amt-row .av-sm { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.amt-row label { font-size:13px; flex:1; }
+.amt-row input { width:100px; padding:6px 10px; font-size:13px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; text-align:right; font-family:'DM Sans',sans-serif; }
+.amt-row input:focus { border-color:var(--accent); }
 .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; }
 .upload-zone:hover { border-color: var(--accent); background: var(--accent-light); }
 .upload-zone p { font-size: 13px; color: var(--muted); margin-top: 8px; }
@@ -285,11 +291,27 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     <div class="field"><label>付款人</label><select id="add-payer"></select></div>
     <div class="field">
       <label>分帳方式</label>
-      <div class="split-toggle">
-        <button class="split-btn active" id="sp-all" onclick="setSplit('all')">平均分給全部人</button>
-        <button class="split-btn" id="sp-sel" onclick="setSplit('select')">指定分帳對象</button>
+      <div class="split-toggle" style="flex-wrap:wrap;gap:5px;">
+        <button class="split-btn active" id="sp-all" onclick="setSplit('all')" style="flex:1;min-width:80px;">平均分全部</button>
+        <button class="split-btn" id="sp-sel" onclick="setSplit('select')" style="flex:1;min-width:80px;">指定對象</button>
+        <button class="split-btn" id="sp-amt" onclick="setSplit('amount')" style="flex:1;min-width:80px;">手動金額</button>
+        <button class="split-btn" id="sp-ratio" onclick="setSplit('ratio')" style="flex:1;min-width:80px;">比例分配</button>
       </div>
-      <div id="sp-area" style="display:none;"><div class="chk-grid" id="sp-checks"></div></div>
+      <!-- 指定對象（勾選）-->
+      <div id="sp-area-select" style="display:none;"><div class="chk-grid" id="sp-checks"></div></div>
+      <!-- 手動輸入每人金額 -->
+      <div id="sp-area-amount" style="display:none;">
+        <div id="sp-amount-inputs"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;">
+          <span>已分配：<span id="sp-amt-used" style="font-weight:500;">0</span></span>
+          <span>差額自動補給付款人</span>
+        </div>
+      </div>
+      <!-- 比例分配 -->
+      <div id="sp-area-ratio" style="display:none;">
+        <div id="sp-ratio-inputs"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;">輸入各人比例（例如 2、1、1），系統自動計算金額</div>
+      </div>
     </div>
     <div class="field"><label>類別</label>
       <select id="add-cat">
@@ -428,6 +450,8 @@ window.deleteExpense=async function(i){ if(!confirm('確定要刪除這筆花費
 window.goAdd=function(){
   document.getElementById('add-payer').innerHTML=state.members.map(m=>`<option value="${m}">${memberEmoji(m)} ${m}</option>`).join('');
   document.getElementById('sp-checks').innerHTML=state.members.map(m=>`<label class="chk-item sel" id="ck-${CSS.escape(m)}"><input type="checkbox" value="${m}" checked onchange="toggleChk(this,'${m}')"> ${memberEmoji(m)} ${m}</label>`).join('');
+  buildAmountInputs();
+  buildRatioInputs();
   document.getElementById('add-name').value='';
   document.getElementById('add-amount').value='';
   document.getElementById('add-date').value=new Date().toISOString().slice(0,10);
@@ -435,8 +459,42 @@ window.goAdd=function(){
   document.getElementById('receipt-preview').style.display='none';
   setSplit('all'); show('s-add');
 };
+
+function buildAmountInputs(){
+  document.getElementById('sp-amount-inputs').innerHTML=state.members.map(m=>`
+    <div class="amt-row">
+      <div class="av-sm" style="background:${avBg(m)};">${memberEmoji(m)}</div>
+      <label>${m}</label>
+      <input type="number" id="amtinp-${CSS.escape(m)}" placeholder="0" min="0" step="any" oninput="updateAmtUsed()"/>
+    </div>`).join('');
+}
+function buildRatioInputs(){
+  document.getElementById('sp-ratio-inputs').innerHTML=state.members.map(m=>`
+    <div class="amt-row">
+      <div class="av-sm" style="background:${avBg(m)};">${memberEmoji(m)}</div>
+      <label>${m}</label>
+      <input type="number" id="ratioinp-${CSS.escape(m)}" value="1" min="0" step="any"/>
+    </div>`).join('');
+}
+window.updateAmtUsed=function(){
+  const total=parseFloat(document.getElementById('add-amount').value)||0;
+  let used=0;
+  state.members.forEach(m=>{ used+=parseFloat(document.getElementById('amtinp-'+CSS.escape(m))?.value||0); });
+  const el=document.getElementById('sp-amt-used');
+  if(el){ el.textContent=used.toLocaleString(); el.style.color=used>total?'var(--red)':'var(--text)'; }
+};
 window.toggleChk=function(el,name){ document.getElementById('ck-'+CSS.escape(name)).classList.toggle('sel',el.checked); };
-window.setSplit=function(mode){ splitMode=mode; document.getElementById('sp-all').classList.toggle('active',mode==='all'); document.getElementById('sp-sel').classList.toggle('active',mode==='select'); document.getElementById('sp-area').style.display=mode==='select'?'block':'none'; };
+window.setSplit=function(mode){
+  splitMode=mode;
+  ['all','sel','amt','ratio'].forEach(k=>document.getElementById('sp-'+k).classList.toggle('active',mode===({all:'all',select:'sel',amount:'amt',ratio:'ratio'})[mode]||k===({all:'all',select:'sel',amount:'amt',ratio:'ratio'}[mode])));
+  document.getElementById('sp-all').classList.toggle('active',mode==='all');
+  document.getElementById('sp-sel').classList.toggle('active',mode==='select');
+  document.getElementById('sp-amt').classList.toggle('active',mode==='amount');
+  document.getElementById('sp-ratio').classList.toggle('active',mode==='ratio');
+  document.getElementById('sp-area-select').style.display=mode==='select'?'block':'none';
+  document.getElementById('sp-area-amount').style.display=mode==='amount'?'block':'none';
+  document.getElementById('sp-area-ratio').style.display=mode==='ratio'?'block':'none';
+};
 
 window.handleReceipt=async function(event){
   const file=event.target.files[0]; if(!file)return;
@@ -470,16 +528,63 @@ window.saveExpense=async function(){
   const date=document.getElementById('add-date').value;
   if(!name){toast('請輸入項目名稱');return;}
   if(!amount||amount<=0){toast('請輸入有效金額');return;}
-  let splitWith=state.members;
-  if(splitMode==='select'){splitWith=[...document.querySelectorAll('#sp-checks input:checked')].map(c=>c.value);if(!splitWith.length){toast('請至少選擇一位分帳對象');return;}}
+
+  // splitAmounts: { memberName: shareAmount }
+  let splitAmounts={};
+
+  if(splitMode==='all'){
+    const share=amount/state.members.length;
+    state.members.forEach(m=>splitAmounts[m]=share);
+
+  } else if(splitMode==='select'){
+    const selected=[...document.querySelectorAll('#sp-checks input:checked')].map(c=>c.value);
+    if(!selected.length){toast('請至少選擇一位分帳對象');return;}
+    const share=amount/selected.length;
+    selected.forEach(m=>splitAmounts[m]=share);
+
+  } else if(splitMode==='amount'){
+    let used=0;
+    state.members.forEach(m=>{
+      const v=parseFloat(document.getElementById('amtinp-'+CSS.escape(m))?.value||0)||0;
+      if(v>0){splitAmounts[m]=v; used+=v;}
+    });
+    if(!Object.keys(splitAmounts).length){toast('請至少輸入一位成員的金額');return;}
+    // diff goes to payer
+    const diff=parseFloat((amount-used).toFixed(2));
+    if(Math.abs(diff)>0.01){ splitAmounts[payer]=(splitAmounts[payer]||0)+diff; }
+
+  } else if(splitMode==='ratio'){
+    let totalRatio=0;
+    const ratios={};
+    state.members.forEach(m=>{ const v=parseFloat(document.getElementById('ratioinp-'+CSS.escape(m))?.value||0)||0; ratios[m]=v; totalRatio+=v; });
+    if(totalRatio<=0){toast('請輸入有效比例');return;}
+    let assigned=0;
+    state.members.forEach((m,i)=>{
+      if(ratios[m]>0){
+        const share=i===state.members.length-1?parseFloat((amount-assigned).toFixed(2)):parseFloat((amount*ratios[m]/totalRatio).toFixed(2));
+        splitAmounts[m]=share; assigned+=splitAmounts[m];
+      }
+    });
+  }
+
+  // Build splitWith array and per-person shares for storage
+  const splitWith=Object.keys(splitAmounts).filter(m=>splitAmounts[m]>0);
   if(!state.expenses)state.expenses=[];
-  state.expenses.push({name,amount,payer,category,date,splitWith,ts:Date.now()});
+  state.expenses.push({name,amount,payer,category,date,splitWith,splitAmounts,ts:Date.now()});
   await cloudSave(); renderTripUI(); show('s-trip'); toast('已儲存！');
 };
 
 function calcBal(){
   const bal={}; state.members.forEach(m=>bal[m]=0);
-  (state.expenses||[]).forEach(e=>{ const share=e.amount/e.splitWith.length; bal[e.payer]=(bal[e.payer]||0)+e.amount; e.splitWith.forEach(m=>bal[m]=(bal[m]||0)-share); });
+  (state.expenses||[]).forEach(e=>{
+    bal[e.payer]=(bal[e.payer]||0)+e.amount;
+    if(e.splitAmounts){
+      Object.entries(e.splitAmounts).forEach(([m,v])=>{ bal[m]=(bal[m]||0)-v; });
+    } else {
+      const share=e.amount/e.splitWith.length;
+      e.splitWith.forEach(m=>bal[m]=(bal[m]||0)-share);
+    }
+  });
   return bal;
 }
 function calcSettlements(bal){
@@ -512,10 +617,17 @@ function renderStats(){
   const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
   const colors=['#C84B2F','#2E7D5E','#A06800','#4338CA','#9D174D','#075985','#374151'];
 
-  // Per-person actual spend (their share of each expense)
+  // Per-person actual spend
   const personSpend={};
   state.members.forEach(m=>personSpend[m]=0);
-  exps.forEach(e=>{ const share=e.amount/e.splitWith.length; e.splitWith.forEach(m=>personSpend[m]=(personSpend[m]||0)+share); });
+  exps.forEach(e=>{
+    if(e.splitAmounts){
+      Object.entries(e.splitAmounts).forEach(([m,v])=>{ personSpend[m]=(personSpend[m]||0)+v; });
+    } else {
+      const share=e.amount/e.splitWith.length;
+      e.splitWith.forEach(m=>personSpend[m]=(personSpend[m]||0)+share);
+    }
+  });
   const sortedPersons=Object.entries(personSpend).sort((a,b)=>b[1]-a[1]);
   const maxSpend=sortedPersons[0]?.[1]||1;
 
