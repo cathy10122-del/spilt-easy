@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spilt Easy — 旅行分帳</title>
+<meta name="description" content="旅行分帳，輕鬆搞定。點連結就能加入旅行，一起記帳，自動算出誰該付誰多少。"/>
+<meta name="theme-color" content="#F7F4EF"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Spilt Easy"/>
+<meta property="og:title" content="Spilt Easy — 旅行分帳"/>
+<meta property="og:description" content="旅行分帳，輕鬆搞定。點連結就能加入旅行，一起記帳，自動算出誰該付誰多少。"/>
+<meta property="og:image" content="https://cathy10122-del.github.io/spilt-easy/og-image.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Spilt Easy"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23C84B2F'/><text y='46' x='8' font-size='42' font-family='serif'>✈</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #F7F4EF;
+  --card: #FFFFFF;
+  --text: #1A1714;
+  --muted: #7A7470;
+  --border: #E5E0D8;
+  --accent: #C84B2F;
+  --accent-light: #FAF0ED;
+  --green: #2E7D5E;
+  --green-light: #EBF5F0;
+  --red: #C84B2F;
+  --red-light: #FAF0ED;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); min-height: 100vh; }
+.app { max-width: 440px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+.screen { display: none; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* HERO */
+.hero { padding: 3rem 0 2rem; text-align: center; }
+.hero h1 { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; }
+.hero h1 em { font-style: italic; color: var(--accent); }
+.hero p { font-size: 15px; color: var(--muted); margin-top: 10px; font-weight: 300; }
+
+/* CARD */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.card-label { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
+/* FIELD */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+.field input, .field select {
+  width: 100%; padding: 10px 14px; font-size: 14px; font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.field-row .field { flex: 1; min-width: 0; margin-bottom: 0; }
+/* iPhone 的日期欄位會用系統預設寬度、文字置中，容易超出卡片；這裡統一成和其他欄位一樣 */
+.field input[type="date"] {
+  -webkit-appearance: none; appearance: none;
+  display: block; width: 100%; min-width: 0; max-width: 100%;
+  min-height: 44px; text-align: left;
+}
+.field input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.3em; }
+/* 自訂分配：系統自動填入的剩餘金額 */
+input.auto { color: var(--accent) !important; font-weight: 500 !important; }
+
+/* BUTTONS */
+.btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); cursor: pointer; transition: all 0.15s; }
+.btn:hover { background: var(--border); }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn.accent { background: var(--accent); color: white; border-color: transparent; }
+.btn.accent:hover { opacity: 0.9; }
+.btn.outline-accent { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.btn.outline-accent:hover { background: var(--accent-light); }
+.btn.sm { width: auto; padding: 7px 14px; font-size: 13px; }
+.btn.danger { color: var(--red); border-color: #F0B0A0; }
+.btn.danger:hover { background: var(--red-light); }
+.btn + .btn { margin-top: 8px; }
+
+/* SUB TABS */
+.sub-tabs { display: flex; gap: 8px; margin-bottom: 1rem; }
+.sub-tab { flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 500; text-align: center; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: "DM Sans", sans-serif; transition: all 0.15s; }
+.sub-tab.active { background: var(--accent); color: white; border-color: transparent; }
+
+/* NAV */
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 1.25rem; }
+.nav-title { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.nav-back { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; padding: 0; }
+.nav-back:hover { color: var(--text); }
+
+/* CODE BOX */
+.code-box { background: var(--accent-light); border: 1px solid #F0C0B0; border-radius: var(--radius); padding: 1.25rem; text-align: center; margin: 1rem 0; }
+.code-str { font-family: 'DM Serif Display', serif; font-size: 34px; letter-spacing: 4px; color: var(--accent); }
+.code-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* CHIPS */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 13px; }
+.chip button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; margin-left: 2px; }
+
+/* AVATAR */
+.av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+
+/* TABS */
+.tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; }
+.tab { flex: 1; padding: 9px 4px; font-size: 13px; text-align: center; cursor: pointer; color: var(--muted); border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; font-family: "DM Sans", sans-serif; transition: all 0.15s; font-weight: 400; }
+.tab.active { background: var(--accent); color: white; border-color: transparent; font-weight: 500; }
+
+/* TRIP HEADER */
+.trip-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+.trip-name { font-family: 'DM Serif Display', serif; font-size: 22px; }
+.code-pill { background: var(--accent-light); border: 1px solid #F0C0B0; border-radius: 999px; padding: 4px 12px; font-size: 12px; color: var(--accent); font-weight: 500; letter-spacing: 1px; white-space: nowrap; cursor: pointer; }
+.code-pill:hover { opacity: 0.8; }
+
+/* iPhone：輸入框字體小於 16px 時，點進去畫面會被自動放大 */
+@media (max-width: 600px) { input, select, textarea { font-size: 16px !important; } }
+
+/* MY TRIPS (remembered on this device) */
+.my-trips-title { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 1px; margin-bottom: 10px; }
+.my-trip { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; background: var(--card); transition: border-color 0.15s; }
+.my-trip:last-child { margin-bottom: 0; }
+.my-trip:hover { border-color: var(--accent); }
+.my-trip-name { flex: 1; font-size: 15px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-trip-code { font-size: 11px; color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+.my-trip-del { background: none; border: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.my-trip-del:hover { color: var(--red); }
+.sync-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 4px; }
+
+/* EXPENSE LIST */
+.ec { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 1.25rem; margin-bottom: 8px; }
+.ec-row { display: flex; align-items: center; gap: 10px; }
+.ec-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.ec-body { flex: 1; min-width: 0; }
+.ec-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ec-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ec-amt { font-size: 15px; font-weight: 500; flex-shrink: 0; }
+.ec-bot { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; gap: 8px; }
+.ec-meta { font-size: 12px; color: var(--muted); line-height: 1.5; min-width: 0; }
+.ec-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.ec-btn { font-size: 12px; padding: 3px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 500; }
+.ec-btn:hover { background: var(--border); }
+.ec-btn.del { color: var(--red); border-color: #F0B0A0; }
+.ec-btn.del:hover { background: var(--red-light); }
+.exp-item { display: flex; align-items: stretch; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.exp-item:last-child { border-bottom: none; }
+.exp-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; align-self: center; }
+.exp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.exp-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.exp-right { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+.exp-amt { font-size: 15px; font-weight: 500; }
+
+/* BALANCE */
+.bal-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.bal-row:last-child { border-bottom: none; }
+.bal-info { flex: 1; }
+.bal-name { font-size: 14px; font-weight: 500; }
+.bal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.bal-amt { font-size: 16px; font-weight: 500; }
+.pos { color: var(--green); } .neg { color: var(--red); }
+.settle-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.settle-row:last-child { border-bottom: none; }
+
+/* STATS */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+.stat-lbl { font-size: 12px; color: var(--muted); }
+.stat-val { font-family: 'DM Serif Display', serif; font-size: 22px; margin-top: 2px; line-height: 1.2; }
+.cat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.cat-row:last-child { border-bottom: none; }
+.bar-bg { flex: 1; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.person-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.person-row:last-child { border-bottom: none; }
+
+/* SPLIT AMOUNT INPUTS */
+.amt-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
+.amt-row:last-child { border-bottom:none; }
+.amt-row .av-sm { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.amt-row label { font-size:13px; flex:1; }
+.amt-row input { width:100px; padding:6px 10px; font-size:13px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; text-align:right; font-family:'DM Sans',sans-serif; }
+.amt-row input:focus { border-color:var(--accent); }
+
+/* SPLIT TOGGLE */
+.split-toggle { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.split-btn { flex: 1; min-width: 80px; padding: 7px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; cursor: pointer; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.split-btn.active { background: var(--text); color: var(--bg); border-color: transparent; }
+
+/* CHECKBOXES */
+.chk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.chk-item { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.chk-item.sel { border-color: var(--accent); background: var(--accent-light); }
+
+/* EXPORT */
+.export-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; font-size: 13px; line-height: 1.9; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; margin-bottom: 12px; }
+
+/* MISC */
+.empty { text-align: center; padding: 2.5rem 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.footer { text-align: center; padding: 2.5rem 0 1rem; font-size: 12px; color: var(--muted); line-height: 2; border-top: 1px solid var(--border); margin-top: 1rem; }
+
+
+.btn.exp-action { width: 46px !important; height: 26px !important; padding: 0 !important; font-size: 11px !important; text-align: center !important; flex-shrink: 0 !important; line-height: 24px !important; box-sizing: border-box !important; border: 1px solid var(--border) !important; background: transparent !important; border-radius: var(--radius-sm) !important; cursor: pointer; font-family: "DM Sans", sans-serif; font-weight: 500; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(26,23,20,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+.modal-box { background: var(--card); border-radius: var(--radius); padding: 1.5rem; max-width: 320px; width: 100%; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 8px; }
+.modal-body { font-size: 14px; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.6; }
+.modal-actions { display: flex; gap: 8px; }
+.modal-actions .btn { margin-top: 0; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; z-index: 999; pointer-events: none; white-space: nowrap; opacity: 0; transition: transform 0.3s, opacity 0.3s; }
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* GLOBAL LOADING */
+#global-loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; flex-direction: column; gap: 12px; }
+#global-loading p { font-size: 14px; color: var(--muted); }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="global-loading"><div class="spinner"></div><p>載入中...</p></div>
+<div id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title" id="confirm-title">確認刪除</div>
+    <div class="modal-body" id="confirm-body">確定要刪除這筆花費嗎？</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmCancel()">取消</button>
+      <button class="btn danger" id="confirm-ok-btn" onclick="confirmOk()">刪除</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ── HOME ── -->
+  <div class="screen" id="s-home">
+    <div class="hero">
+      <h1>Spilt<br/><em>Easy</em></h1>
+      <p>旅行分帳，輕鬆搞定</p>
+    </div>
+
+    <div class="card" id="my-trips-card" style="display:none;">
+      <div class="my-trips-title">我的旅行</div>
+      <div id="my-trips-list"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;gap:6px;margin-bottom:1.25rem;">
+        <button class="sub-tab active" id="home-tab-create" onclick="switchHomeTab('create')">建立旅行</button>
+        <button class="sub-tab" id="home-tab-join" onclick="switchHomeTab('join')">加入旅行</button>
+      </div>
+
+      <div id="home-panel-create">
+        <div class="field"><label>旅行名稱</label><input type="text" id="hn-name" placeholder="例如：南法普羅旺斯" maxlength="40"/></div>
+        <div class="field-row">
+          <div class="field"><label>出發日期</label><input type="date" id="hn-date-start"/></div>
+          <div class="field"><label>結束日期</label><input type="date" id="hn-date-end"/></div>
+        </div>
+        <button class="btn accent" style="margin-top:8px;" onclick="createTrip()">建立旅行 →</button>
+      </div>
+
+      <div id="home-panel-join" style="display:none;">
+        <div class="field"><label>旅行代碼</label><input type="text" id="hn-code" placeholder="TRIP-XXXXXX" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;"/><div style="font-size:12px;color:var(--muted);margin-top:6px;">也可以直接貼上邀請連結</div></div>
+        <button class="btn accent" onclick="joinTrip()">加入旅行 →</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      © 2026 Spilt Easy · All rights reserved<br/>
+      Made with ♥ by elinajuan<br/>
+      <span id="app-version" style="font-size:11px;opacity:.7;">v2 · 2026-10-29</span>
+    </div>
+  </div>
+
+  <!-- ── SETUP ── -->
+  <div class="screen" id="s-setup">
+    <div class="nav">
+      <button class="nav-back" onclick="goHome()">← 回首頁</button>
+      <div class="nav-title" id="su-title">設定成員</div>
+      <div></div>
+    </div>
+    <div class="code-box">
+      <div class="code-str" id="su-code"></div>
+      <div class="code-hint">將此代碼分享給旅伴，即可加入同一旅行</div>
+      <button class="btn accent sm" style="margin-top:12px;" onclick="shareTrip()">🔗 分享邀請連結</button>
+    </div>
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="field" style="margin-bottom:0;"><label>旅行幣別</label>
+        <select id="hn-currency">
+          <optgroup label="常用幣別">
+            <option value="TWD">TWD 新台幣</option>
+            <option value="JPY">JPY 日圓</option>
+            <option value="KRW">KRW 韓元</option>
+            <option value="EUR">EUR 歐元</option>
+            <option value="USD">USD 美元</option>
+            <option value="HKD">HKD 港幣</option>
+            <option value="AUD">AUD 澳幣</option>
+            <option value="CNY">CNY 人民幣</option>
+            <option value="GBP">GBP 英鎊</option>
+            <option value="SGD">SGD 新加坡幣</option>
+          </optgroup>
+          <optgroup label="亞洲">
+            <option value="THB">THB 泰銖</option>
+            <option value="MYR">MYR 馬來西亞令吉</option>
+            <option value="IDR">IDR 印尼盾</option>
+            <option value="VND">VND 越南盾</option>
+            <option value="PHP">PHP 菲律賓披索</option>
+            <option value="INR">INR 印度盧比</option>
+          </optgroup>
+          <optgroup label="歐洲">
+            <option value="CHF">CHF 瑞士法郎</option>
+            <option value="SEK">SEK 瑞典克朗</option>
+            <option value="NOK">NOK 挪威克朗</option>
+            <option value="DKK">DKK 丹麥克朗</option>
+            <option value="TRY">TRY 土耳其里拉</option>
+          </optgroup>
+          <optgroup label="美洲／大洋洲">
+            <option value="CAD">CAD 加拿大幣</option>
+            <option value="NZD">NZD 紐西蘭幣</option>
+            <option value="MXN">MXN 墨西哥披索</option>
+            <option value="BRL">BRL 巴西雷亞爾</option>
+          </optgroup>
+          <optgroup label="中東／非洲">
+            <option value="AED">AED 阿聯迪拉姆</option>
+            <option value="ZAR">ZAR 南非蘭特</option>
+          </optgroup>
+        </select>
+        <div id="cur-hint" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">新增成員</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="su-member" placeholder="輸入名字" maxlength="20"
+          style="flex:1;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);outline:none;font-family:'DM Sans',sans-serif;"
+          onkeydown="if(event.key==='Enter')addMember()"/>
+        <button class="btn sm" style="height:42px;" onclick="addMember()">新增</button>
+      </div>
+      <div class="chips" id="su-chips"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px;" id="su-count">尚未新增成員</div>
+    </div>
+    <button class="btn accent" id="su-go" onclick="goToTrip()">開始記帳 →</button>
+  </div>
+
+  <!-- ── TRIP MAIN ── -->
+  <div class="screen" id="s-trip">
+    <div class="trip-header">
+      <div>
+        <button class="nav-back" onclick="goHome()" style="margin-bottom:4px;">← 回首頁</button>
+        <div class="trip-name" id="tr-name"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="tr-dates"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;"><span class="sync-dot" id="sync-dot"></span><span id="sync-txt">已同步</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div class="code-pill" id="tr-code" onclick="copyCode()" title="點擊複製代碼"></div>
+        <div class="code-pill" onclick="shareTrip()" title="分享邀請連結">🔗 分享連結</div>
+        <div class="code-pill" onclick="openSetup()" title="新增或移除旅伴、變更幣別">👥 成員設定</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('expenses')">花費</div>
+      <div class="tab" onclick="switchTab('balances')">結算</div>
+      <div class="tab" onclick="switchTab('stats')">統計</div>
+      <div class="tab" onclick="switchTab('export')">匯出</div>
+    </div>
+
+    <div id="tab-expenses">
+      <button class="btn accent" onclick="goAdd()" style="margin-bottom:1rem;">+ 新增花費</button>
+      <div id="tr-exp-list"></div>
+    </div>
+
+    <div id="tab-balances" style="display:none;">
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="subtab-bal-btn" onclick="switchSubTab('bal')">每人淨收支</button>
+        <button class="sub-tab" id="subtab-settle-btn" onclick="switchSubTab('settle')">建議轉帳清單</button>
+      </div>
+      <div id="subtab-bal"><div class="card"><div id="bal-list"></div></div></div>
+      <div id="subtab-settle" style="display:none;"><div class="card"><div id="settle-list"></div></div></div>
+    </div>
+
+    <div id="tab-stats" style="display:none;"><div id="stats-content"></div></div>
+
+    <div id="tab-export" style="display:none;">
+      <div class="card">
+        <div class="card-label">匯出結帳摘要</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">可直接複製貼到 LINE 群組</p>
+        <div class="export-box" id="export-txt"></div>
+        <button class="btn accent" onclick="copyExport()">複製摘要</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADD EXPENSE ── -->
+  <div class="screen" id="s-add">
+    <div class="nav">
+      <button class="nav-back" onclick="backToTrip()">← 返回</button>
+      <div class="nav-title" id="add-screen-title">新增花費</div>
+      <div></div>
+    </div>
+
+    <div class="card">
+      <div class="field"><label>項目名稱</label><input type="text" id="add-name" placeholder="例如：晚餐、住宿、門票"/></div>
+      <div class="field-row">
+        <div class="field"><label>金額</label><div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);overflow:hidden;"><span id="add-currency-label" style="padding:10px 10px;font-size:13px;color:var(--muted);border-right:1px solid var(--border);white-space:nowrap;"></span><input type="number" inputmode="decimal" id="add-amount" placeholder="0" min="0" step="any" oninput="onAmountInput()" style="border:none;border-radius:0;flex:1;background:transparent;"/></div></div>
+        <div class="field"><label>日期</label><input type="date" id="add-date"/></div>
+      </div>
+      <div class="field"><label>付款人</label><select id="add-payer"></select></div>
+      <div class="field">
+        <label>分帳方式</label>
+        <div class="split-toggle">
+          <button class="split-btn active" id="sp-all" onclick="setSplit('all')">平均分全部</button>
+          <button class="split-btn" id="sp-amt" onclick="setSplit('custom')">自訂分配</button>
+        </div>
+        <div id="sp-area-custom" style="display:none;">
+          <div id="sp-custom-inputs"></div>
+          <div style="font-size:13px;margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:var(--muted);">未分配金額</span>
+            <span id="sp-remaining" style="font-weight:500;font-size:15px;">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>類別</label>
+        <select id="add-cat">
+          <option value="🍽">🍽 餐飲</option>
+          <option value="🏨">🏨 住宿</option>
+          <option value="🚗">🚗 交通</option>
+          <option value="🎡">🎡 娛樂</option>
+          <option value="🛍">🛍 購物</option>
+          <option value="💊">💊 醫療</option>
+          <option value="📦">📦 其他</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn accent" id="add-save-btn" onclick="saveExpense()">儲存花費</button>
+  </div>
+
+</div><!-- .app -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBf62ZiumOpE4At9JtFb4-XUD5G9W6frxA",
+  authDomain: "spilt-easy.firebaseapp.com",
+  projectId: "spilt-easy",
+  storageBucket: "spilt-easy.firebasestorage.app",
+  messagingSenderId: "779199113188",
+  appId: "1:779199113188:web:d272f8034c26a8514789f1"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// ── STATE ──
+let state = { tripCode:null, tripName:'', currency:'TWD', dateStart:'', dateEnd:'', members:[], expenses:[] };
+let splitMode = 'all';
+let editingId = null;     // 正在編輯的花費 id（新增時為 null）
+let draftId = null;       // 新增花費時預先產生的 id，儲存失敗重試也不會重複記帳
+let formPeople = [];      // 目前新增／編輯表單中的人名（與自訂分配欄位順序一致）
+let unsubscribe = null;
+let confirmCallback = null;
+let busy = false;
+let currentTab = 'expenses';
+let autoIdx = null;       // 自訂分配中，目前由系統自動填入「剩餘金額」的那一格（沒有就是 null）
+
+// ── PURE LOGIC START（不碰畫面，可單獨測試）──
+const EMOJIS = ['🐱','🐶','🦊','🐼','🐨','🦁','🐸','🐧','🦋','🌸','🌈','⭐','🍀','🎈','🎸','🍕','🍦','🚀','🎯','💎','🌙','🔥','🍓','🥑','🎀'];
+const AV_BG = ['#FAF0ED','#EBF5F0','#FFF8E6','#EEF2FF','#FFF0F5','#F0F9FF'];
+const ZERO_DEC = ['TWD','JPY','KRW','VND','IDR'];   // 這些幣別不使用小數
+
+function memberEmoji(name) { let h=0; for(let c of name) h+=c.charCodeAt(0); return EMOJIS[h%EMOJIS.length]; }
+function avBg(name) { let h=0; for(let c of name) h+=c.charCodeAt(0); return AV_BG[h%AV_BG.length]; }
+function randomInts(n) {
+  try { const a = new Uint32Array(n); crypto.getRandomValues(a); return Array.from(a); }
+  catch(e) { return Array.from({length:n}, () => Math.floor(Math.random()*4294967296)); }
+}
+function genCode() { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return 'TRIP-' + randomInts(6).map(n=>c[n%c.length]).join(''); }
+function newId() {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch(e) {}
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// 代碼：新的是 6 碼，舊旅行是 4 碼，兩種都接受。可直接貼上整段邀請連結或訊息，也可只輸入後面的英數字。
+function normalizeCode(raw) {
+  const s = String(raw||'').toUpperCase();
+  const m = s.match(/TRIP-[A-Z0-9]{4,8}/);
+  if (m) return m[0];
+  const t = s.trim();
+  return /^[A-Z0-9]{4,8}$/.test(t) ? 'TRIP-'+t : null;
+}
+
+function decimals() { return ZERO_DEC.includes(state.currency) ? 0 : 2; }
+function fmt(n) { const d=decimals(); return Number(n).toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function money(n) { return state.currency + ' ' + fmt(n); }
+function eps() { return decimals()===0 ? 0.5 : 0.005; }   // 小於這個金額視為 0
+function todayLocal() { const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+
+// 舊資料沒有 id 時，用建立時間當 id（所有裝置算出來都一樣）
+function expId(e, i) { return e.id || (e.ts ? 'ts'+e.ts : 'i'+i); }
+// 每個人分攤多少（舊資料可能沒有 splitAmounts）
+function shares(e) {
+  if (e.splitAmounts) return e.splitAmounts;
+  const w = e.splitWith || [], o = {};
+  w.forEach(m => o[m] = e.amount / w.length);
+  return o;
+}
+function memberInUse(t, name) {
+  return (t.expenses||[]).some(e => e.payer===name || (shares(e)[name]||0)>0 || (e.splitWith||[]).includes(name));
+}
+function sortedExpenses(list) {
+  return (list||[]).map((e,i)=>({e, id:expId(e,i), i}))
+    .sort((a,b) => (b.e.date||'').localeCompare(a.e.date||'') || (b.e.ts||0)-(a.e.ts||0) || b.i-a.i);
+}
+function normalizeTrip(t) {
+  t = t || {};
+  return { ...t,
+    members: Array.isArray(t.members) ? t.members : [],
+    expenses: Array.isArray(t.expenses) ? t.expenses : [],
+    currency: /^[A-Z]{3}$/.test(t.currency||'') ? t.currency : 'TWD' };
+}
+
+// 所有改動都寫成「拿最新資料 → 套用一個動作 → 寫回」，而且重複執行結果相同（重試不會重複）
+const ops = {
+  upsertExpense(t, entry) {
+    const list = [...t.expenses];
+    const i = list.findIndex((e,k) => expId(e,k)===entry.id);
+    if (i>=0) list[i] = entry; else list.push(entry);
+    return { ...t, expenses: list };
+  },
+  deleteExpense(t, id) { return { ...t, expenses: t.expenses.filter((e,k) => expId(e,k)!==id) }; },
+  addMember(t, name) { return t.members.includes(name) ? t : { ...t, members: [...t.members, name] }; },
+  removeMember(t, name) {
+    if (memberInUse(t, name)) throw new Error('IN_USE');
+    return { ...t, members: t.members.filter(m => m!==name) };
+  },
+  setCurrency(t, cur) { return { ...t, currency: cur }; }
+};
+
+function calcBal() {
+  const bal = {}; state.members.forEach(m => bal[m]=0);
+  (state.expenses||[]).forEach(e => {
+    bal[e.payer] = (bal[e.payer]||0) + e.amount;
+    Object.entries(shares(e)).forEach(([m,v]) => { bal[m] = (bal[m]||0) - v; });
+  });
+  return bal;
+}
+
+function calcSettlements(bal) {
+  const E = eps();
+  const cred=[], debt=[];
+  Object.entries(bal).forEach(([m,b]) => { if(b>E) cred.push({name:m,amount:b}); else if(b<-E) debt.push({name:m,amount:-b}); });
+  cred.sort((a,b)=>b.amount-a.amount); debt.sort((a,b)=>b.amount-a.amount);
+  const txns=[], c=cred.map(x=>({...x})), d=debt.map(x=>({...x}));
+  let ci=0, di=0;
+  while (ci<c.length && di<d.length) {
+    const amt = Math.min(c[ci].amount, d[di].amount);
+    if (amt>E) txns.push({from:d[di].name, to:c[ci].name, amount:amt});
+    c[ci].amount -= amt; d[di].amount -= amt;
+    if (c[ci].amount<E) ci++;
+    if (d[di].amount<E) di++;
+  }
+  return txns;
+}
+// ── PURE LOGIC END ──
+
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+function setSyncUI(ok, label) {
+  const dot=document.getElementById('sync-dot'), txt=document.getElementById('sync-txt'); if(!dot) return;
+  dot.style.background = ok ? 'var(--green)' : 'var(--red)';
+  txt.textContent = label || (ok ? '已同步' : '同步失敗');
+}
+function fmtDate(d) { if(!d) return ''; const [y,m,day]=d.split('-'); return `${y}/${m}/${day}`; }
+async function copyText(text, okMsg) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg); return; } catch(e) {}
+  // 備援：部分內建瀏覽器（如 LINE）沒有剪貼簿 API，改用舊方式複製
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px;';
+    document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy'); document.body.removeChild(ta);
+    if (ok) { toast(okMsg); return; }
+  } catch(e) {}
+  toast('複製失敗，請手動選取文字複製');
+}
+function errMsg(e) {
+  if (e && e.message==='NOT_FOUND') return '找不到這個旅行，可能已被刪除';
+  if (e && e.message==='OFFLINE') return '目前沒有網路，連上網路後再按一次儲存';
+  return '儲存失敗，請確認網路後再試一次';
+}
+
+// ── FIREBASE ──
+async function cloudLoad(code) { const snap = await getDoc(doc(db,'trips',code)); return snap.exists() ? normalizeTrip(snap.data()) : null; }
+function subscribeTrip(code) {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  unsubscribe = onSnapshot(doc(db,'trips',code), (snap) => {
+    if (!snap.exists()) return;
+    state = normalizeTrip(snap.data());
+    setSyncUI(navigator.onLine!==false, navigator.onLine!==false ? undefined : '目前離線');
+    renderTripUI();
+    if (document.getElementById('s-setup').classList.contains('active')) renderChips();
+  }, () => setSyncUI(false));
+}
+function withTimeout(promise, ms) {
+  let timer;
+  const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('TIMEOUT')), ms); });
+  return Promise.race([promise, t]).finally(() => clearTimeout(timer));
+}
+// 讀取最新資料 → 套用一個動作 → 寫回；多人同時操作時不會互相覆蓋
+async function mutateTrip(mutator) {
+  if (!state.tripCode) throw new Error('NO_TRIP');
+  if (navigator.onLine === false) { setSyncUI(false, '目前離線'); throw new Error('OFFLINE'); }
+  const ref = doc(db,'trips',state.tripCode);
+  const run = runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('NOT_FOUND');
+    const next = mutator(normalizeTrip(snap.data()));
+    tx.set(ref, next);
+    return next;
+  });
+  try {
+    const next = await withTimeout(run, 20000);
+    state = next; setSyncUI(true);
+    return next;
+  } catch (e) {
+    if (e && (e.message==='TIMEOUT' || !['IN_USE','NOT_FOUND'].includes(e.message))) setSyncUI(false);
+    throw e;
+  }
+}
+window.addEventListener('offline', () => setSyncUI(false, '目前離線'));
+window.addEventListener('online', () => setSyncUI(true));
+
+// ── MY TRIPS (remembered on this device) ──
+const TRIPS_KEY = 'spiltEasyTrips';
+function getSavedTrips() {
+  try { return JSON.parse(localStorage.getItem(TRIPS_KEY)||'[]').filter(t=>t && /^TRIP-[A-Z0-9]{4,8}$/.test(t.code)); }
+  catch(e) { return []; }
+}
+function setSavedTrips(list) { try { localStorage.setItem(TRIPS_KEY, JSON.stringify(list)); } catch(e) {} }
+function rememberTrip() {
+  if (!state.tripCode) return;
+  const list = getSavedTrips().filter(t=>t.code!==state.tripCode);
+  list.unshift({ code:state.tripCode, name:state.tripName||state.tripCode });
+  setSavedTrips(list.slice(0,20));
+}
+function renderMyTrips() {
+  const list = getSavedTrips();
+  document.getElementById('my-trips-card').style.display = list.length ? 'block' : 'none';
+  document.getElementById('my-trips-list').innerHTML = list.map(t =>
+    `<div class="my-trip" onclick="openTrip('${t.code}')"><span style="font-size:20px;">🧳</span><div class="my-trip-name">${esc(t.name)}</div><span class="my-trip-code">${t.code}</span><button class="my-trip-del" title="從清單移除" onclick="event.stopPropagation();forgetTrip('${t.code}')">×</button></div>`
+  ).join('');
+}
+window.forgetTrip = function(code) {
+  const t = getSavedTrips().find(x=>x.code===code);
+  showConfirm('從清單移除', `只會從這台裝置的「我的旅行」移除${t?`「${t.name}」`:''}，旅行資料不會被刪除，之後仍可用代碼加入。`, '移除', 'danger', ()=>{
+    setSavedTrips(getSavedTrips().filter(x=>x.code!==code)); renderMyTrips();
+  });
+};
+function tripLink() { return location.origin + location.pathname + '?trip=' + state.tripCode; }
+// 直接複製「邀請文字 + 連結」並顯示提示（和複製代碼一樣），不跳出系統分享視窗
+window.shareTrip = function() {
+  const text = `一起來分帳「${state.tripName}」！點連結直接加入（代碼 ${state.tripCode}）`;
+  copyText(`${text}\n${tripLink()}`, '邀請連結已複製！貼到 LINE 群組吧');
+};
+
+// ── CONFIRM MODAL ──
+function showConfirm(title, body, okLabel, okClass, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').textContent = body;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.textContent = okLabel;
+  btn.className = 'btn ' + okClass;
+  confirmCallback = cb;
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+window.confirmCancel = () => { document.getElementById('confirm-modal').style.display='none'; confirmCallback=null; };
+window.confirmOk = () => { document.getElementById('confirm-modal').style.display='none'; if(confirmCallback)confirmCallback(); confirmCallback=null; };
+
+// ── HOME TAB ──
+window.switchHomeTab = function(tab){
+  document.getElementById('home-panel-create').style.display = tab==='create'?'block':'none';
+  document.getElementById('home-panel-join').style.display = tab==='join'?'block':'none';
+  document.getElementById('home-tab-create').classList.toggle('active', tab==='create');
+  document.getElementById('home-tab-join').classList.toggle('active', tab==='join');
+};
+
+// ── NAVIGATION ──
+function goHome() { if(unsubscribe){unsubscribe();unsubscribe=null;} renderMyTrips(); show('s-home'); }
+window.goHome = goHome;
+window.backToTrip = function(){ editingId=null; show('s-trip'); };
+
+window.copyCode = function() { copyText(state.tripCode, '代碼已複製！'); };
+
+// ── SETUP SCREEN（成員／幣別）──
+function prepareSetup() {
+  document.getElementById('su-code').textContent = state.tripCode;
+  document.getElementById('su-title').textContent = state.tripName;
+  const sel = document.getElementById('hn-currency');
+  const hasExp = (state.expenses||[]).length > 0;
+  sel.value = state.currency || 'TWD';
+  sel.disabled = hasExp;     // 已有花費就不能改幣別，避免金額的意思被改掉
+  document.getElementById('cur-hint').textContent = hasExp ? '已有花費紀錄，無法變更幣別' : '';
+  document.getElementById('su-go').textContent = hasExp ? '完成 →' : '開始記帳 →';
+  document.getElementById('su-member').value = '';
+  renderChips();
+}
+window.openSetup = function(){ prepareSetup(); show('s-setup'); };
+
+// ── CREATE TRIP ──
+window.createTrip = async function(){
+  if (busy) return;
+  const name = document.getElementById('hn-name').value.trim();
+  if(!name){ toast('請輸入旅行名稱'); return; }
+  const dateStart = document.getElementById('hn-date-start').value;
+  const dateEnd = document.getElementById('hn-date-end').value;
+  busy = true;
+  try {
+    let created = null;
+    for (let i=0; i<5 && !created; i++) {          // 代碼撞到已存在的旅行就換一個
+      const code = genCode();
+      const ref = doc(db,'trips',code);
+      created = await withTimeout(runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (snap.exists()) return null;
+        const t = { tripCode:code, tripName:name, currency:'TWD', dateStart, dateEnd, members:[], expenses:[] };
+        tx.set(ref, t);
+        return t;
+      }), 20000);
+    }
+    if (!created) { toast('建立失敗，請再試一次'); return; }
+    state = normalizeTrip(created);
+    rememberTrip(); subscribeTrip(state.tripCode);
+    prepareSetup(); show('s-setup');
+  } catch(e) { toast('建立失敗，請確認網路後再試一次'); }
+  finally { busy = false; }
+};
+
+// ── OPEN / JOIN TRIP ──
+// 用於「輸入代碼 / 邀請連結 / 我的旅行清單」。
+// 第一次加入 → 先到成員設定頁（可確認或新增自己）；這台裝置已記住的旅行 → 直接進入記帳畫面。
+window.openTrip = async function(rawCode){
+  const code = normalizeCode(rawCode);
+  if(!code){ toast('代碼格式不正確'); return false; }
+  const known = getSavedTrips().some(t=>t.code===code);
+  let data;
+  try { data = await withTimeout(cloudLoad(code), 15000); } catch(e){ toast('連線失敗，請稍後再試'); return false; }
+  if(!data){ toast('找不到此旅行代碼'); return false; }
+  state = data;
+  rememberTrip();
+  subscribeTrip(state.tripCode);
+  prepareSetup();
+  if(known && state.members.length>=2){ renderTripUI(); show('s-trip'); }
+  else { show('s-setup'); }
+  return true;
+};
+window.joinTrip = async function(){
+  await window.openTrip(document.getElementById('hn-code').value);
+};
+
+// ── MEMBERS ──
+window.addMember = async function(){
+  if (busy) return;
+  const inp = document.getElementById('su-member');
+  const name = inp.value.trim();
+  if(!name) return;
+  if(state.members.includes(name)){ toast('名稱重複'); return; }
+  busy = true;
+  try { await mutateTrip(t => ops.addMember(t, name)); inp.value = ''; renderChips(); }
+  catch(e) { toast(errMsg(e)); }
+  finally { busy = false; }
+};
+window.removeMember = async function(name){
+  if (busy) return;
+  if (memberInUse(state, name)) { toast(`「${name}」已有花費紀錄，無法移除`); return; }
+  busy = true;
+  try { await mutateTrip(t => ops.removeMember(t, name)); renderChips(); }
+  catch(e) { toast(e && e.message==='IN_USE' ? `「${name}」已有花費紀錄，無法移除` : errMsg(e)); }
+  finally { busy = false; }
+};
+
+function renderChips(){
+  document.getElementById('su-chips').innerHTML = state.members.map(m=>
+    `<span class="chip"><span style="font-size:16px;">${memberEmoji(m)}</span>${esc(m)}<button data-name="${esc(m)}" onclick="removeMember(this.dataset.name)">×</button></span>`
+  ).join('');
+  document.getElementById('su-count').textContent = state.members.length?`已新增 ${state.members.length} 位成員`:'尚未新增成員，至少需要 2 位';
+}
+
+window.goToTrip = async function(){
+  if (busy) return;
+  if(state.members.length<2){ toast('請至少新增2位成員'); return; }
+  const sel = document.getElementById('hn-currency');
+  const cur = sel.value || 'TWD';
+  if (!sel.disabled && cur !== state.currency) {
+    busy = true;
+    try { await mutateTrip(t => ops.setCurrency(t, cur)); }
+    catch(e) { toast(errMsg(e)); busy = false; return; }
+    busy = false;
+  }
+  renderTripUI(); show('s-trip');
+};
+
+// ── TRIP UI ──
+function renderTripUI(){
+  document.getElementById('tr-name').textContent = state.tripName;
+  document.getElementById('tr-code').textContent = state.tripCode;
+  const ds=fmtDate(state.dateStart), de=fmtDate(state.dateEnd);
+  document.getElementById('tr-dates').textContent = ds&&de?`${ds} ～ ${de}`:ds?`出發：${ds}`:'';
+  renderExpenses();
+  if(currentTab==='balances') renderBalances();
+  if(currentTab==='stats') renderStats();
+  if(currentTab==='export') renderExport();
+}
+
+window.switchTab = function(tab){
+  currentTab = tab;
+  ['expenses','balances','stats','export'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'block':'none');
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['expenses','balances','stats','export'][i]===tab));
+  if(tab==='balances')renderBalances();
+  if(tab==='stats')renderStats();
+  if(tab==='export')renderExport();
+};
+
+// ── EXPENSES ──
+function renderExpenses(){
+  const list = document.getElementById('tr-exp-list');
+  if(!state.expenses||state.expenses.length===0){
+    list.innerHTML='<div class="empty"><div style="font-size:36px;margin-bottom:8px;">🧾</div>還沒有任何花費記錄<br>點擊上方按鈕新增第一筆</div>';
+    return;
+  }
+  list.innerHTML = sortedExpenses(state.expenses).map(({e,id})=>`
+    <div class="ec">
+      <div class="ec-row">
+        <div class="ec-icon">${esc(e.category||'')}</div>
+        <div class="ec-body">
+          <div class="ec-top">
+            <div class="ec-name">${esc(e.name)}</div>
+            <div class="ec-amt">${money(e.amount)}</div>
+          </div>
+          <div class="ec-bot">
+            <div class="ec-meta">${memberEmoji(e.payer)} ${esc(e.payer)} 付款・${Object.keys(shares(e)).filter(m=>shares(e)[m]>0).length}人分${e.date?'・'+fmtDate(e.date):''}</div>
+            <div class="ec-btns">
+              <button class="ec-btn" data-id="${esc(id)}" onclick="editExpense(this.dataset.id)">編輯</button>
+              <button class="ec-btn del" data-id="${esc(id)}" onclick="deleteExpense(this.dataset.id)">刪除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function findExpense(id) { const i = state.expenses.findIndex((x,k)=>expId(x,k)===id); return i<0 ? null : state.expenses[i]; }
+
+window.deleteExpense = function(id){
+  const e = findExpense(id);
+  if(!e){ toast('這筆花費已不存在'); renderExpenses(); return; }
+  showConfirm('刪除花費', `確定要刪除「${e.name}」嗎？此動作無法復原。`, '刪除', 'danger', async ()=>{
+    try { await mutateTrip(t => ops.deleteExpense(t, id)); renderTripUI(); toast('已刪除'); }
+    catch(err) { toast(errMsg(err)); }
+  });
+};
+
+// ── ADD / EDIT EXPENSE ──
+function fillPayerOptions(selected){
+  const sel = document.getElementById('add-payer');
+  sel.innerHTML = formPeople.map(m=>`<option value="${esc(m)}">${memberEmoji(m)} ${esc(m)}${state.members.includes(m)?'':'（已不在名單）'}</option>`).join('');
+  if (selected) sel.value = selected;
+}
+
+window.goAdd = function(){
+  editingId = null; draftId = newId();
+  document.getElementById('add-screen-title').textContent = '新增花費';
+  formPeople = [...state.members];
+  fillPayerOptions();
+  buildCustomInputs();
+  const cl=document.getElementById('add-currency-label'); if(cl) cl.textContent=state.currency;
+  document.getElementById('add-name').value='';
+  document.getElementById('add-amount').value='';
+  document.getElementById('add-date').value=todayLocal();
+  setSplit('all'); show('s-add');
+};
+
+window.editExpense = function(id){
+  const e = findExpense(id);
+  if(!e){ toast('找不到這筆花費（可能已被刪除）'); renderExpenses(); return; }
+  editingId = id; draftId = null;
+  document.getElementById('add-screen-title').textContent = '編輯花費';
+  const sa = shares(e);
+  // 表單人名：目前成員，加上這筆花費裡出現過、但已不在名單的人（避免儲存時悄悄改掉）
+  formPeople = [...state.members];
+  [e.payer, ...Object.keys(sa)].forEach(n => { if(n && !formPeople.includes(n)) formPeople.push(n); });
+  fillPayerOptions(e.payer);
+  document.getElementById('add-name').value = e.name;
+  document.getElementById('add-amount').value = e.amount;
+  document.getElementById('add-date').value = e.date || '';
+  document.getElementById('add-cat').value = e.category;
+  const cl=document.getElementById('add-currency-label'); if(cl) cl.textContent=state.currency;
+  buildCustomInputs();
+  const n = formPeople.length;
+  const allEqual = n===state.members.length && formPeople.every(m => Math.abs((sa[m]||0) - e.amount/n) < 0.02);
+  if(allEqual){
+    setSplit('all');
+  } else {
+    setSplit('custom');
+    formPeople.forEach((m,i)=>{
+      const inp = document.getElementById('custominp-'+i);
+      if(inp && sa[m]) inp.value = sa[m];
+    });
+    updateRemaining();
+  }
+  show('s-add');
+};
+
+function buildCustomInputs(){
+  autoIdx = null;
+  document.getElementById('sp-custom-inputs').innerHTML = formPeople.map((m,i)=>`
+    <div class="amt-row">
+      <div class="av-sm" style="background:${avBg(m)};">${memberEmoji(m)}</div>
+      <label>${esc(m)}</label>
+      <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);overflow:hidden;width:128px;"><span style="padding:5px 7px;font-size:12px;color:var(--muted);border-right:1px solid var(--border);white-space:nowrap;">${esc(state.currency)}</span><input type="number" inputmode="decimal" id="custominp-${i}" placeholder="0" min="0" step="any" oninput="onCustomInput(${i})" style="border:none;border-radius:0;flex:1;background:transparent;width:0;padding:6px 8px;font-size:13px;text-align:right;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;"/></div>
+    </div>`).join('');
+}
+
+// 只剩最後一格還空著時，自動把「剩餘金額」填進去（淡橘色字）；你自己改過那一格，就不再自動處理
+function autoFillLast(){
+  const get = (i) => document.getElementById('custominp-'+i);
+  if (autoIdx !== null && get(autoIdx)) { get(autoIdx).value = ''; get(autoIdx).classList.remove('auto'); }
+  autoIdx = null;
+  if (splitMode !== 'custom') return;
+  const total = parseFloat(document.getElementById('add-amount').value) || 0;
+  if (!total) return;
+  const blanks = []; let used = 0;
+  formPeople.forEach((m,i) => {
+    const inp = get(i); if (!inp) return;
+    if (inp.value.trim() === '') blanks.push(i); else used += parseFloat(inp.value) || 0;
+  });
+  if (blanks.length !== 1) return;
+  const rest = Math.round((total - used) * 100) / 100;
+  if (rest > 0) { const inp = get(blanks[0]); inp.value = String(rest); inp.classList.add('auto'); autoIdx = blanks[0]; }
+}
+window.onCustomInput = function(i){
+  if (i === autoIdx) { const inp = document.getElementById('custominp-'+i); if (inp) inp.classList.remove('auto'); autoIdx = null; }  // 自己改了這一格 → 視為手動輸入
+  autoFillLast(); updateRemaining();
+};
+window.onAmountInput = function(){ autoFillLast(); updateRemaining(); };
+
+window.updateRemaining = function(){
+  const total = parseFloat(document.getElementById('add-amount').value)||0;
+  let used = 0;
+  formPeople.forEach((m,i)=>{ used+=parseFloat(document.getElementById('custominp-'+i)?.value||0)||0; });
+  const remaining = parseFloat((total - used).toFixed(2));
+  const el = document.getElementById('sp-remaining');
+  if(el){
+    el.textContent = state.currency + ' ' + (total ? remaining.toLocaleString(undefined,{maximumFractionDigits:2}) : '—');
+    el.style.color = remaining < -0.01 ? 'var(--red)' : remaining < 0.01 ? 'var(--green)' : 'var(--text)';
+  }
+};
+
+window.setSplit = function(mode){
+  splitMode = mode;
+  document.getElementById('sp-all').classList.toggle('active', mode==='all');
+  document.getElementById('sp-amt').classList.toggle('active', mode==='custom');
+  document.getElementById('sp-area-custom').style.display = mode==='custom'?'block':'none';
+  if(mode==='custom') updateRemaining();
+};
+
+window.saveExpense = async function(){
+  if (busy) return;
+  const name = document.getElementById('add-name').value.trim();
+  let amount = parseFloat(document.getElementById('add-amount').value);
+  const payer = document.getElementById('add-payer').value;
+  const category = document.getElementById('add-cat').value;
+  const date = document.getElementById('add-date').value;
+  if(!name){ toast('請輸入項目名稱'); return; }
+  if(!amount||amount<=0){ toast('請輸入有效金額'); return; }
+  amount = Math.round(amount*100)/100;
+
+  let splitAmounts = {};
+  if(splitMode==='all'){
+    const share = amount/state.members.length;
+    state.members.forEach(m=>splitAmounts[m]=share);
+  } else {
+    let used = 0;
+    formPeople.forEach((m,i)=>{
+      const v = parseFloat(document.getElementById('custominp-'+i)?.value||0)||0;
+      if(v>0){ splitAmounts[m]=v; used+=v; }
+    });
+    if(!Object.keys(splitAmounts).length){ toast('請至少輸入一位成員的金額'); return; }
+    const remaining = parseFloat((amount-used).toFixed(2));
+    if(remaining < -0.01){ toast(`超出總金額 ${state.currency} ${Math.abs(remaining).toLocaleString(undefined,{maximumFractionDigits:2})}，請重新確認`); return; }
+    if(remaining > 0.01){ toast(`還有 ${state.currency} ${remaining.toLocaleString(undefined,{maximumFractionDigits:2})} 還沒分配，請分配完再儲存`); return; }
+  }
+
+  const old = editingId ? findExpense(editingId) : null;
+  const entry = {
+    id: editingId || draftId || newId(),
+    name, amount, payer, category, date,
+    splitWith: Object.keys(splitAmounts).filter(m=>splitAmounts[m]>0),
+    splitAmounts,
+    ts: (old && old.ts) ? old.ts : Date.now()
+  };
+  const wasEditing = editingId !== null;
+  const btn = document.getElementById('add-save-btn');
+  busy = true; btn.disabled = true; btn.textContent = '儲存中…';
+  try {
+    await mutateTrip(t => ops.upsertExpense(t, entry));
+    editingId = null; draftId = null;
+    renderTripUI(); show('s-trip');
+    toast(wasEditing ? '已更新！' : '已儲存！');
+  } catch(e) {
+    toast(errMsg(e));        // 失敗時留在這一頁，資料還在，可以直接再按一次
+  } finally {
+    busy = false; btn.disabled = false; btn.textContent = '儲存花費';
+  }
+};
+
+window.switchSubTab = function(tab){
+  document.getElementById('subtab-bal').style.display = tab==='bal'?'block':'none';
+  document.getElementById('subtab-settle').style.display = tab==='settle'?'block':'none';
+  document.getElementById('subtab-bal-btn').classList.toggle('active', tab==='bal');
+  document.getElementById('subtab-settle-btn').classList.toggle('active', tab==='settle');
+};
+
+function renderBalances(){
+  const bal = calcBal(), E = eps();
+  document.getElementById('bal-list').innerHTML = Object.entries(bal).map(([m,b])=>{
+    const isPos=b>E, isNeg=b<-E;
+    return`<div class="bal-row"><div class="av" style="background:${avBg(m)};">${memberEmoji(m)}</div><div class="bal-info"><div class="bal-name">${esc(m)}</div><div class="bal-sub">${isPos?'應收回':isNeg?'應付出':'已結清'}</div></div><div class="bal-amt ${isPos?'pos':isNeg?'neg':''}">${isPos?'+':''}${money(Math.abs(b))}</div></div>`;
+  }).join('');
+  const txns = calcSettlements(bal);
+  document.getElementById('settle-list').innerHTML = txns.length===0
+    ? '<div class="empty">🎉 大家都結清了！</div>'
+    : txns.map(t=>`<div class="settle-row" style="font-size:14px;padding:11px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span><span style="font-weight:500;">${memberEmoji(t.from)} ${esc(t.from)}</span><span style="color:var(--muted);"> 需轉帳給 </span><span style="font-weight:500;">${memberEmoji(t.to)} ${esc(t.to)}</span></span><span style="font-weight:500;flex-shrink:0;">${money(t.amount)}</span></div>`).join('');
+}
+
+function renderStats(){
+  const exps = state.expenses||[];
+  const total = exps.reduce((s,e)=>s+e.amount,0);
+  const catMap = {};
+  const catNames = {'🍽':'餐飲','🏨':'住宿','🚗':'交通','🎡':'娛樂','🛍':'購物','💊':'醫療','📦':'其他'};
+  exps.forEach(e=>catMap[e.category]=(catMap[e.category]||0)+e.amount);
+  const sorted = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const colors = ['#C84B2F','#2E7D5E','#A06800','#4338CA','#9D174D','#075985','#374151'];
+  const personSpend = {};
+  state.members.forEach(m=>personSpend[m]=0);
+  exps.forEach(e=>{
+    Object.entries(shares(e)).forEach(([m,v])=>{ personSpend[m]=(personSpend[m]||0)+v; });
+  });
+  const sortedPersons = Object.entries(personSpend).sort((a,b)=>b[1]-a[1]);
+  const maxSpend = sortedPersons[0]?.[1]||1;
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-lbl">總花費</div><div class="stat-val">${money(total)}</div></div>
+    <div class="stat-card"><div class="stat-lbl">花費筆數</div><div class="stat-val">${exps.length} 筆</div></div>
+    <div class="stat-card"><div class="stat-lbl">旅行人數</div><div class="stat-val">${state.members.length} 人</div></div>
+    <div class="stat-card"><div class="stat-lbl">平均每筆</div><div class="stat-val" style="font-size:18px;">${exps.length?money(total/exps.length):money(0)}</div></div>
+  </div>`;
+  html += `<div class="card" style="margin-bottom:1rem;"><div class="card-label">每人實際花費</div>
+    ${sortedPersons.map(([m,amt])=>`
+    <div class="person-row">
+      <div class="av" style="background:${avBg(m)};width:32px;height:32px;font-size:17px;">${memberEmoji(m)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:500;margin-bottom:5px;">${esc(m)}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(amt/maxSpend*100)}%;background:var(--accent);"></div></div>
+      </div>
+      <div style="font-size:14px;font-weight:500;min-width:90px;text-align:right;">${money(amt)}</div>
+    </div>`).join('')}
+  </div>`;
+  if(sorted.length>0){
+    html += `<div class="card"><div class="card-label">花費類別分布</div>
+      ${sorted.map(([cat,amt],i)=>`
+      <div class="cat-row">
+        <span style="font-size:18px;width:26px;">${esc(cat)}</span>
+        <span style="font-size:13px;flex:1;">${esc(catNames[cat]||cat)}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${total?Math.round(amt/total*100):0}%;background:${colors[i%colors.length]};"></div></div>
+        <span style="font-size:13px;font-weight:500;min-width:80px;text-align:right;">${money(amt)}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('stats-content').innerHTML = html;
+}
+
+function renderExport(){
+  const bal=calcBal(), E=eps(); const txns=calcSettlements(bal);
+  const total=(state.expenses||[]).reduce((s,e)=>s+e.amount,0);
+  const ds=fmtDate(state.dateStart), de=fmtDate(state.dateEnd);
+  const dateRange=ds&&de?`${ds}～${de}`:new Date().toLocaleDateString('zh-TW');
+  let txt=`🧳 ${state.tripName} — 分帳結算\n`;
+  txt+=`📅 ${dateRange} 👥 ${state.members.length}人 代碼：${state.tripCode}\n`;
+  txt+=`🔗 ${tripLink()}\n`;
+  txt+=`${'─'.repeat(26)}\n`;
+  txt+=`💰 總花費：${money(total)}\n`;
+  txt+=`${'─'.repeat(26)}\n📊 每人淨收支：\n`;
+  Object.entries(bal).forEach(([m,b])=>{ const sign=b>E?'＋':b<-E?'－':'＝'; txt+=` ${memberEmoji(m)} ${sign} ${m}：${money(Math.abs(b))}\n`; });
+  txt+=`${'─'.repeat(26)}\n`;
+  txt+=txns.length===0?'✅ 大家都結清了！\n':`💸 轉帳清單：\n${txns.map(t=>` ${memberEmoji(t.from)} ${t.from} → ${memberEmoji(t.to)} ${t.to}：${money(t.amount)}`).join('\n')}\n`;
+  txt+=`${'─'.repeat(26)}\nby Spilt Easy · elinajuan`;
+  document.getElementById('export-txt').textContent = txt;
+}
+
+window.copyExport = function(){ copyText(document.getElementById('export-txt').textContent, '已複製！貼到 LINE 群組吧 🎉'); };
+
+// ── INIT ──
+document.getElementById('global-loading').style.display='none';
+renderMyTrips();
+show('s-home');
+// 從邀請連結（?trip=TRIP-XXXXXX）進入時，自動加入該旅行
+const inviteCode = new URLSearchParams(location.search).get('trip');
+if(inviteCode){
+  history.replaceState(null,'',location.pathname);
+  window.openTrip(inviteCode);
+}
+</script>
+</body>
+</html>
